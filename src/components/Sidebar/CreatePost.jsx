@@ -26,8 +26,8 @@ import usePostStore from "../../store/postStore";
 import useUserProfileStore from "../../store/userProfileStore";
 import { useLocation } from "react-router-dom";
 import { addDoc, arrayUnion, collection, doc, updateDoc } from "firebase/firestore";
-import { firestore, storage } from "../../firebase/firebase";
-import { getDownloadURL, ref, uploadString } from "firebase/storage";
+import { firestore } from "../../firebase/firebase";
+import { supabase } from "../../firebase/supabase";
 
 const CreatePost = () => {
 	const { isOpen, onOpen, onClose } = useDisclosure();
@@ -121,6 +121,7 @@ const CreatePost = () => {
 
 export default CreatePost;
 
+// CHANGED: Completely rewritten useCreatePost hook to use Supabase Storage
 function useCreatePost() {
 	const showToast = useShowToast();
 	const [isLoading, setIsLoading] = useState(false);
@@ -134,6 +135,7 @@ function useCreatePost() {
 		if (isLoading) return;
 		if (!selectedFile) throw new Error("Please select an image");
 		setIsLoading(true);
+		
 		const newPost = {
 			caption: caption,
 			likes: [],
@@ -143,18 +145,43 @@ function useCreatePost() {
 		};
 
 		try {
+			// Create post document in Firestore first
 			const postDocRef = await addDoc(collection(firestore, "posts"), newPost);
 			const userDocRef = doc(firestore, "users", authUser.uid);
-			const imageRef = ref(storage, `posts/${postDocRef.id}`);
 
+			// CHANGED: Convert base64 to file blob for Supabase upload
+			const response = await fetch(selectedFile);
+			const blob = await response.blob();
+			
+			// CHANGED: Upload image to Supabase Storage instead of Firebase
+			const fileName = `posts/${postDocRef.id}`;
+			const { data: uploadData, error: uploadError } = await supabase.storage
+				.from('posts') // Your bucket name - make sure this bucket exists in Supabase
+				.upload(fileName, blob, {
+					cacheControl: '3600',
+					upsert: false
+				});
+
+			if (uploadError) {
+				throw uploadError;
+			}
+
+			// CHANGED: Get public URL from Supabase instead of Firebase
+			const { data: urlData } = supabase.storage
+				.from('posts')
+				.getPublicUrl(fileName);
+
+			const downloadURL = urlData.publicUrl;
+
+			// Update user's posts array (same as before)
 			await updateDoc(userDocRef, { posts: arrayUnion(postDocRef.id) });
-			await uploadString(imageRef, selectedFile, "data_url");
-			const downloadURL = await getDownloadURL(imageRef);
-
+			
+			// Update post document with image URL (same as before)
 			await updateDoc(postDocRef, { imageURL: downloadURL });
 
 			newPost.imageURL = downloadURL;
 
+			// Update local state (same as before)
 			if (userProfile.uid === authUser.uid) createPost({ ...newPost, id: postDocRef.id });
 
 			if (pathname !== "/" && userProfile.uid === authUser.uid) addPost({ ...newPost, id: postDocRef.id });
@@ -168,64 +195,4 @@ function useCreatePost() {
 	};
 
 	return { isLoading, handleCreatePost };
-}
-
-// 1- COPY AND PASTE AS THE STARTER CODE FOR THE CRAETEPOST COMPONENT
-// import { Box, Flex, Tooltip } from "@chakra-ui/react";
-// import { CreatePostLogo } from "../../assets/constants";
-
-// const CreatePost = () => {
-// 	return (
-// 		<>
-// 			<Tooltip
-// 				hasArrow
-// 				label={"Create"}
-// 				placement='right'
-// 				ml={1}
-// 				openDelay={500}
-// 				display={{ base: "block", md: "none" }}
-// 			>
-// 				<Flex
-// 					alignItems={"center"}
-// 					gap={4}
-// 					_hover={{ bg: "whiteAlpha.400" }}
-// 					borderRadius={6}
-// 					p={2}
-// 					w={{ base: 10, md: "full" }}
-// 					justifyContent={{ base: "center", md: "flex-start" }}
-// 				>
-// 					<CreatePostLogo />
-// 					<Box display={{ base: "none", md: "block" }}>Create</Box>
-// 				</Flex>
-// 			</Tooltip>
-// 		</>
-// 	);
-// };
-
-// export default CreatePost;
-
-// 2-COPY AND PASTE FOR THE MODAL
-{
-	/* <Modal isOpen={isOpen} onClose={onClose} size='xl'>
-				<ModalOverlay />
-
-				<ModalContent bg={"black"} border={"1px solid gray"}>
-					<ModalHeader>Create Post</ModalHeader>
-					<ModalCloseButton />
-					<ModalBody pb={6}>
-						<Textarea placeholder='Post caption...' />
-
-						<Input type='file' hidden />
-
-						<BsFillImageFill
-							style={{ marginTop: "15px", marginLeft: "5px", cursor: "pointer" }}
-							size={16}
-						/>
-					</ModalBody>
-
-					<ModalFooter>
-						<Button mr={3}>Post</Button>
-					</ModalFooter>
-				</ModalContent>
-			</Modal> */
 }

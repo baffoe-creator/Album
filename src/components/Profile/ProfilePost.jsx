@@ -23,8 +23,8 @@ import useUserProfileStore from "../../store/userProfileStore";
 import useAuthStore from "../../store/authStore";
 import useShowToast from "../../hooks/useShowToast";
 import { useState } from "react";
-import { deleteObject, ref } from "firebase/storage";
-import { firestore, storage } from "../../firebase/firebase";
+import { firestore } from "../../firebase/firebase";
+import { supabase } from "../../firebase/supabase";
 import { arrayRemove, deleteDoc, doc, updateDoc } from "firebase/firestore";
 import usePostStore from "../../store/postStore";
 import Caption from "../Comment/Caption";
@@ -38,13 +38,24 @@ const ProfilePost = ({ post }) => {
 	const deletePost = usePostStore((state) => state.deletePost);
 	const decrementPostsCount = useUserProfileStore((state) => state.deletePost);
 
+	 
 	const handleDeletePost = async () => {
 		if (!window.confirm("Are you sure you want to delete this post?")) return;
 		if (isDeleting) return;
 
+		setIsDeleting(true);
 		try {
-			const imageRef = ref(storage, `posts/${post.id}`);
-			await deleteObject(imageRef);
+			 
+			const { error: storageError } = await supabase.storage
+				.from('posts') // Your bucket name
+				.remove([`posts/${post.id}`]); // Use the same path format as upload
+
+			if (storageError) {
+				console.error('Error deleting from Supabase:', storageError);
+				 
+			}
+
+			 
 			const userRef = doc(firestore, "users", authUser.uid);
 			await deleteDoc(doc(firestore, "posts", post.id));
 
