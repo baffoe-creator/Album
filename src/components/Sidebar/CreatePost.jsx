@@ -121,7 +121,7 @@ const CreatePost = () => {
 
 export default CreatePost;
 
-// CHANGED: Completely rewritten useCreatePost hook to use Supabase Storage
+ 
 function useCreatePost() {
 	const showToast = useShowToast();
 	const [isLoading, setIsLoading] = useState(false);
@@ -149,14 +149,14 @@ function useCreatePost() {
 			const postDocRef = await addDoc(collection(firestore, "posts"), newPost);
 			const userDocRef = doc(firestore, "users", authUser.uid);
 
-			// CHANGED: Convert base64 to file blob for Supabase upload
+			 
 			const response = await fetch(selectedFile);
 			const blob = await response.blob();
 			
 			// CHANGED: Upload image to Supabase Storage instead of Firebase
 			const fileName = `posts/${postDocRef.id}`;
 			const { data: uploadData, error: uploadError } = await supabase.storage
-				.from('posts') // Your bucket name - make sure this bucket exists in Supabase
+				.from('posts')  
 				.upload(fileName, blob, {
 					cacheControl: '3600',
 					upsert: false
@@ -166,22 +166,22 @@ function useCreatePost() {
 				throw uploadError;
 			}
 
-			// CHANGED: Get public URL from Supabase instead of Firebase
+			 
 			const { data: urlData } = supabase.storage
 				.from('posts')
 				.getPublicUrl(fileName);
 
 			const downloadURL = urlData.publicUrl;
 
-			// Update user's posts array (same as before)
+			 
 			await updateDoc(userDocRef, { posts: arrayUnion(postDocRef.id) });
 			
-			// Update post document with image URL (same as before)
+			 
 			await updateDoc(postDocRef, { imageURL: downloadURL });
 
 			newPost.imageURL = downloadURL;
 
-			// Update local state (same as before)
+			 
 			if (userProfile.uid === authUser.uid) createPost({ ...newPost, id: postDocRef.id });
 
 			if (pathname !== "/" && userProfile.uid === authUser.uid) addPost({ ...newPost, id: postDocRef.id });

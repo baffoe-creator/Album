@@ -1,8 +1,8 @@
 import { useState } from "react";
 import useAuthStore from "../store/authStore";
 import useShowToast from "./useShowToast";
-import { getDownloadURL, ref, uploadString } from "firebase/storage";
-import { firestore, storage } from "../firebase/firebase";
+import { firestore } from "../firebase/firebase";
+import { supabase } from "../firebase/supabase";
 import { doc, updateDoc } from "firebase/firestore";
 import useUserProfileStore from "../store/userProfileStore";
 
@@ -19,14 +19,31 @@ const useEditProfile = () => {
 		if (isUpdating || !authUser) return;
 		setIsUpdating(true);
 
-		const storageRef = ref(storage, `profilePics/${authUser.uid}`);
 		const userDocRef = doc(firestore, "users", authUser.uid);
 
 		let URL = "";
 		try {
 			if (selectedFile) {
-				await uploadString(storageRef, selectedFile, "data_url");
-				URL = await getDownloadURL(ref(storage, `profilePics/${authUser.uid}`));
+				 
+				const response = await fetch(selectedFile);
+				const blob = await response.blob();
+				
+				 
+				const fileName = `profilePics/${authUser.uid}`;
+				const { data, error } = await supabase.storage
+					.from('posts') // Use your posts bucket or create a new one for profile pics
+					.upload(fileName, blob, {
+						upsert: true // Overwrite if exists
+					});
+
+				if (error) throw error;
+
+				// Get public URL from Supabase
+				const { data: urlData } = supabase.storage
+					.from('posts')
+					.getPublicUrl(fileName);
+
+				URL = urlData.publicUrl;
 			}
 
 			const updatedUser = {
@@ -44,6 +61,8 @@ const useEditProfile = () => {
 			showToast("Success", "Profile updated successfully", "success");
 		} catch (error) {
 			showToast("Error", error.message, "error");
+		} finally {
+			setIsUpdating(false);
 		}
 	};
 
