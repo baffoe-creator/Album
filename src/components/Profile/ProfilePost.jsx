@@ -38,24 +38,26 @@ const ProfilePost = ({ post }) => {
 	const deletePost = usePostStore((state) => state.deletePost);
 	const decrementPostsCount = useUserProfileStore((state) => state.deletePost);
 
-	 
 	const handleDeletePost = async () => {
 		if (!window.confirm("Are you sure you want to delete this post?")) return;
 		if (isDeleting) return;
 
 		setIsDeleting(true);
 		try {
-			 
+			const possiblePaths = [
+				`post-${post.id}`,
+				`posts/${post.id}`,
+				`profile-${post.id}`
+			];
+
 			const { error: storageError } = await supabase.storage
-				.from('posts') // Your bucket name
-				.remove([`posts/${post.id}`]); // Use the same path format as upload
+				.from('posts')
+				.remove(possiblePaths);
 
 			if (storageError) {
 				console.error('Error deleting from Supabase:', storageError);
-				 
 			}
 
-			 
 			const userRef = doc(firestore, "users", authUser.uid);
 			await deleteDoc(doc(firestore, "posts", post.id));
 
@@ -167,9 +169,7 @@ const ProfilePost = ({ post }) => {
 								<Divider my={4} bg={"gray.500"} />
 
 								<VStack w='full' alignItems={"start"} maxH={"350px"} overflowY={"auto"}>
-									{/* CAPTION */}
 									{post.caption && <Caption post={post} />}
-									{/* COMMENTS */}
 									{post.comments.map((comment) => (
 										<Comment key={comment.id} comment={comment} />
 									))}

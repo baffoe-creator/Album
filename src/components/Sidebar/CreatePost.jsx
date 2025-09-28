@@ -121,7 +121,6 @@ const CreatePost = () => {
 
 export default CreatePost;
 
- 
 function useCreatePost() {
 	const showToast = useShowToast();
 	const [isLoading, setIsLoading] = useState(false);
@@ -145,16 +144,13 @@ function useCreatePost() {
 		};
 
 		try {
-			// Create post document in Firestore first
 			const postDocRef = await addDoc(collection(firestore, "posts"), newPost);
 			const userDocRef = doc(firestore, "users", authUser.uid);
 
-			 
 			const response = await fetch(selectedFile);
 			const blob = await response.blob();
 			
-			// CHANGED: Upload image to Supabase Storage instead of Firebase
-			const fileName = `posts/${postDocRef.id}`;
+			const fileName = `post-${postDocRef.id}`;
 			const { data: uploadData, error: uploadError } = await supabase.storage
 				.from('posts')  
 				.upload(fileName, blob, {
@@ -166,22 +162,18 @@ function useCreatePost() {
 				throw uploadError;
 			}
 
-			 
 			const { data: urlData } = supabase.storage
 				.from('posts')
 				.getPublicUrl(fileName);
 
 			const downloadURL = urlData.publicUrl;
 
-			 
 			await updateDoc(userDocRef, { posts: arrayUnion(postDocRef.id) });
 			
-			 
 			await updateDoc(postDocRef, { imageURL: downloadURL });
 
 			newPost.imageURL = downloadURL;
 
-			 
 			if (userProfile.uid === authUser.uid) createPost({ ...newPost, id: postDocRef.id });
 
 			if (pathname !== "/" && userProfile.uid === authUser.uid) addPost({ ...newPost, id: postDocRef.id });

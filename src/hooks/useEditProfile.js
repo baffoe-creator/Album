@@ -24,21 +24,18 @@ const useEditProfile = () => {
 		let URL = "";
 		try {
 			if (selectedFile) {
-				 
 				const response = await fetch(selectedFile);
 				const blob = await response.blob();
 				
-				 
-				const fileName = `profilePics/${authUser.uid}`;
+				const fileName = `profile-${authUser.uid}`;
 				const { data, error } = await supabase.storage
-					.from('posts') // Use your posts bucket or create a new one for profile pics
+					.from('posts')
 					.upload(fileName, blob, {
-						upsert: true // Overwrite if exists
+						upsert: true
 					});
 
 				if (error) throw error;
 
-				// Get public URL from Supabase
 				const { data: urlData } = supabase.storage
 					.from('posts')
 					.getPublicUrl(fileName);
