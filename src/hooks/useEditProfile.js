@@ -28,16 +28,18 @@ const useEditProfile = () => {
 				const blob = await response.blob();
 				
 				const fileName = `profile-${authUser.uid}`;
+				// Changed from 'profile pictures' to 'profile-pictures'
 				const { data, error } = await supabase.storage
-					.from('posts')
+					.from('profile-pictures')
 					.upload(fileName, blob, {
+						cacheControl: '3600',
 						upsert: true
 					});
 
 				if (error) throw error;
 
 				const { data: urlData } = supabase.storage
-					.from('posts')
+					.from('profile-pictures')
 					.getPublicUrl(fileName);
 
 				URL = urlData.publicUrl;
