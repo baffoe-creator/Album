@@ -1,6 +1,7 @@
 import { Box, Container, Flex } from "@chakra-ui/react";
 import FeedPosts from "../../components/FeedPosts/FeedPosts";
 import SuggestedUsers from "../../components/SuggestedUsers/SuggestedUsers";
+import AdSense from "../../components/AdSense/AdSense";
 
 const HomePage = () => {
 	return (
@@ -11,6 +12,16 @@ const HomePage = () => {
 				</Box>
 				<Box flex={3} mr={20} display={{ base: "none", lg: "block" }} maxW={"300px"}>
 					<SuggestedUsers />
+					<Box mt={6}>
+						<amp-ad width="100vw" height="320"
+     type="adsense"
+     data-ad-client="ca-pub-9591264391614264"
+     data-ad-slot="3118509237"
+     data-auto-format="rspv"
+     data-full-width="">
+  <div overflow=""></div>
+</amp-ad>
+					</Box>
 				</Box>
 			</Flex>
 		</Container>
