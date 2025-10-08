@@ -1,6 +1,6 @@
 # Album 📸
 
-A modern Instagram clone built with React and powered by cutting-edge web technologies. Share your moments, connect with friends, and explore beautiful photography in a sleek, responsive interface.
+A modern Photo Album built with React and powered by cutting-edge web technologies. Share your moments, connect with friends, and explore beautiful photography in a sleek, responsive interface.
 
 ## 🚀 Live Demo
 
@@ -94,7 +94,7 @@ npm run build
 yarn build
 ```
 
-The built files will be in the `dist/` directory, ready for deployment.
+ 
 
 ## 🔧 Configuration
 
